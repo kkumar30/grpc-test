@@ -2,11 +2,16 @@ package main
 
 import (
 	"fmt"
+	pb "github.com/kkumar30/grpc-test/proto"
 	"google.golang.org/grpc"
 	"log"
 	"math"
 	"net"
 )
+
+type UserManagementServer struct {
+	pb.UnimplementedChatServiceServer
+}
 
 func main() {
 	fmt.Println("Here")

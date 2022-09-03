@@ -1,4 +1,4 @@
-module grpc-test
+module github.com/kkumar30/grpc-test
 
 go 1.19
 

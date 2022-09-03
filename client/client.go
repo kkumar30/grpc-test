@@ -27,4 +27,8 @@ func main() {
 	resp, err := c.SayHello(ctx, &pb.Message{Body: msg})
 	fmt.Printf("Here")
 	fmt.Printf("Response %s\n", resp.GetBody())
+
+	var query = "kush"
+	response, err := c.QueryLogFiles(ctx, &pb.QueryInput{Query: query})
+	fmt.Printf("Response lines %s\n Count: %d", response.LogLines, response.Count)
 }

@@ -6,6 +6,16 @@ message Message {
   string body = 1;
 }
 
+message QueryInput {
+  string query = 1;
+}
+
+message QueryResults {
+  repeated string logLines= 1;
+  int32 count = 2;
+}
+
 service ChatService {
   rpc SayHello(Message) returns (Message) {}
+  rpc QueryLogFiles(QueryInput) returns (QueryResults) {}
 }

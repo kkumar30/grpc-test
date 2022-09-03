@@ -1,6 +1,6 @@
 syntax = "proto3";
 package proto;
-option go_package="github.com/kkumar30/grpc-test;proto";
+option go_package="github.com/kkumar30/grpc-test";
 
 message Message {
   string body = 1;

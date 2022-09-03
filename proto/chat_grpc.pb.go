@@ -4,7 +4,7 @@
 // - protoc             v3.21.5
 // source: proto/chat.proto
 
-package proto
+package grpc_test
 
 import (
 	context "context"

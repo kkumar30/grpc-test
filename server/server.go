@@ -6,8 +6,6 @@ import (
 	"log"
 	"math"
 	"net"
-
-	pb "github.com/kkumar30/grpc-test/proto"
 )
 
 func main() {

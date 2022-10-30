@@ -15,7 +15,19 @@ message QueryResults {
   int32 count = 2;
 }
 
+message UploadFileRequest {
+  string filename = 1;
+  bytes file = 2;
+}
+
+message UploadFileResponse {
+  string filename = 1;
+  string status = 2;
+}
+
+
 service ChatService {
   rpc SayHello(Message) returns (Message) {}
   rpc QueryLogFiles(QueryInput) returns (QueryResults) {}
+  rpc UploadFile(stream UploadFileRequest) returns (UploadFileResponse) {}
 }

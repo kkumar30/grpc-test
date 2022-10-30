@@ -1,15 +1,15 @@
 package main
 
 import (
-	"bufio"
+	"bytes"
 	"context"
 	"fmt"
 	pb "github.com/kkumar30/grpc-test/proto"
 	"google.golang.org/grpc"
+	"io"
 	"log"
 	"net"
 	"os"
-	"strings"
 )
 
 const (
@@ -31,26 +31,43 @@ func (s *ChatServer) QueryLogFiles(ctx context.Context, input *pb.QueryInput) (*
 	return &pb.QueryResults{LogLines: lines, Count: count}, nil
 }
 
-func scanLogs(query string) ([]string, int32) {
-	file, err := os.Open("sample.log")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
+func (s *ChatServer) UploadFile(stream pb.ChatService_UploadFileServer) error {
 
-	var count int32
-	var results []string
-
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := scanner.Text() // GET the line string
-		if strings.Contains(line, query) {
-			fmt.Println(line)
-			count += 1
-			results = append(results, line)
+	fileData := bytes.Buffer{}
+	var fileName string
+	log.Printf("Starting to download from client: \n")
+	for {
+		req, err := stream.Recv()
+		if err == io.EOF {
+			log.Printf("no more data from client")
+			break
 		}
+		if err != nil {
+			log.Printf("Error while reading client stream: %v", err)
+		}
+
+		chunk := req.GetFile()
+		fileName = req.GetFilename()
+
+		_, err = fileData.Write(chunk)
+
+		err = os.WriteFile(fileName, fileData.Bytes(), 0600)
+		if err != nil {
+			fmt.Printf("Error %s", err)
+		}
+		fmt.Printf("File %s written", fileName)
 	}
-	return results, count
+	response := &pb.UploadFileResponse{
+		Filename: fileName,
+		Status:   "Success",
+	}
+
+	err := stream.SendAndClose(response)
+	if err != nil {
+		log.Fatalf("Error while sending response to client: %v", err)
+	}
+
+	return nil
 }
 
 func main() {
@@ -66,5 +83,4 @@ func main() {
 	if err := grpcServer.Serve(lis); err != nil {
 		log.Fatalf("Failed to serve %v", err)
 	}
-
 }

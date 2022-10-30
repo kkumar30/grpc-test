@@ -24,6 +24,7 @@ const _ = grpc.SupportPackageIsVersion7
 type ChatServiceClient interface {
 	SayHello(ctx context.Context, in *Message, opts ...grpc.CallOption) (*Message, error)
 	QueryLogFiles(ctx context.Context, in *QueryInput, opts ...grpc.CallOption) (*QueryResults, error)
+	UploadFile(ctx context.Context, opts ...grpc.CallOption) (ChatService_UploadFileClient, error)
 }
 
 type chatServiceClient struct {
@@ -52,12 +53,47 @@ func (c *chatServiceClient) QueryLogFiles(ctx context.Context, in *QueryInput, o
 	return out, nil
 }
 
+func (c *chatServiceClient) UploadFile(ctx context.Context, opts ...grpc.CallOption) (ChatService_UploadFileClient, error) {
+	stream, err := c.cc.NewStream(ctx, &ChatService_ServiceDesc.Streams[0], "/proto.ChatService/UploadFile", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &chatServiceUploadFileClient{stream}
+	return x, nil
+}
+
+type ChatService_UploadFileClient interface {
+	Send(*UploadFileRequest) error
+	CloseAndRecv() (*UploadFileResponse, error)
+	grpc.ClientStream
+}
+
+type chatServiceUploadFileClient struct {
+	grpc.ClientStream
+}
+
+func (x *chatServiceUploadFileClient) Send(m *UploadFileRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *chatServiceUploadFileClient) CloseAndRecv() (*UploadFileResponse, error) {
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	m := new(UploadFileResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // ChatServiceServer is the server API for ChatService service.
 // All implementations must embed UnimplementedChatServiceServer
 // for forward compatibility
 type ChatServiceServer interface {
 	SayHello(context.Context, *Message) (*Message, error)
 	QueryLogFiles(context.Context, *QueryInput) (*QueryResults, error)
+	UploadFile(ChatService_UploadFileServer) error
 	mustEmbedUnimplementedChatServiceServer()
 }
 
@@ -70,6 +106,9 @@ func (UnimplementedChatServiceServer) SayHello(context.Context, *Message) (*Mess
 }
 func (UnimplementedChatServiceServer) QueryLogFiles(context.Context, *QueryInput) (*QueryResults, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method QueryLogFiles not implemented")
+}
+func (UnimplementedChatServiceServer) UploadFile(ChatService_UploadFileServer) error {
+	return status.Errorf(codes.Unimplemented, "method UploadFile not implemented")
 }
 func (UnimplementedChatServiceServer) mustEmbedUnimplementedChatServiceServer() {}
 
@@ -120,6 +159,32 @@ func _ChatService_QueryLogFiles_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ChatService_UploadFile_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(ChatServiceServer).UploadFile(&chatServiceUploadFileServer{stream})
+}
+
+type ChatService_UploadFileServer interface {
+	SendAndClose(*UploadFileResponse) error
+	Recv() (*UploadFileRequest, error)
+	grpc.ServerStream
+}
+
+type chatServiceUploadFileServer struct {
+	grpc.ServerStream
+}
+
+func (x *chatServiceUploadFileServer) SendAndClose(m *UploadFileResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *chatServiceUploadFileServer) Recv() (*UploadFileRequest, error) {
+	m := new(UploadFileRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // ChatService_ServiceDesc is the grpc.ServiceDesc for ChatService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -136,6 +201,12 @@ var ChatService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _ChatService_QueryLogFiles_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "UploadFile",
+			Handler:       _ChatService_UploadFile_Handler,
+			ClientStreams: true,
+		},
+	},
 	Metadata: "proto/chat.proto",
 }
